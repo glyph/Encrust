@@ -8,12 +8,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from twisted.python.filepath import FilePath
-from ._zip import createZipFile
+from twisted.python.modules import getModule
+
+from ._signing import notarize, signOneFile, signablePathsIn
 from ._spawnutil import c, parallel
-from ._signing import signOneFile, signablePathsIn, notarize
-
-
-
+from ._zip import createZipFile
 
 
 @dataclass
@@ -28,7 +27,9 @@ class AppBuilder:
     appleID: str
     teamID: str
     identityHash: str
-    entitlementsPath: FilePath[str]
+    entitlementsPath: FilePath[str] = getModule(__name__).sibling(
+        "required-python-entitlements.plist"
+    )
 
     async def releaseWorkflow(self) -> None:
         """
