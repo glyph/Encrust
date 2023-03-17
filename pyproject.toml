@@ -3,7 +3,10 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.package-data]
-"*" = ["py.typed"]
+"*" = [
+    "py.typed",
+    "*.plist",
+]
 
 [project]
 name = "encrust"
