@@ -13,6 +13,9 @@ version = "2023.03.17"
 dependencies = [
     "twisted",
     "click",
+    "delocate",
+    "py2app",
+    "wheel_filename",
 ]
 
 [project.scripts]
