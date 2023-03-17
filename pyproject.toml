@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+[project]
+name = "encrust"
+description = "Sign, notarize, staple and archive Python mac apps."
+readme = "README.rst"
+version = "2023.03.17"
+dependencies = [
+    "twisted",
+    "click",
+]
+
+[project.scripts]
+encrust = "encrust.cli:main"
