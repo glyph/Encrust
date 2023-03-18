@@ -9,3 +9,5 @@ applications written in Python require to launch, which is to say:
     - notarization
     - archiving
 
+Run ``encrust configure`` for an explanation of how to set it up, then
+``encrust release`` to run it.
