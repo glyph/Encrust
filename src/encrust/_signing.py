@@ -23,7 +23,6 @@ async def signOneFile(
         codesigningIdentity,
         "--entitlements",
         entitlementsStr,
-        "--deep",
         "--force",
         "--options",
         "runtime",
