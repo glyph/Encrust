@@ -170,7 +170,7 @@ async def parallel(
     for w in work:
         async for each in drain():
             yield each
-        start(saveAndRelease(w))
+        Deferred.fromCoroutine(saveAndRelease(w))
 
     for x in range(parallelism):
         async for each in drain():

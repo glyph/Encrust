@@ -76,21 +76,24 @@ async def findSingleArchitectureBinaries(
     Find any binaries under a given path that are single-architecture (i.e.
     those that will not run on an older Mac because they're fat binary).
     """
-
+    checkedSoFar = 0
     async def checkOne(path: FilePath[str]) -> tuple[FilePath[str], bool]:
         """
         Check the given path for a single-architecture binary, returning True
         if it is one and False if not.
         """
+        nonlocal checkedSoFar
         if path.islink():
             return path, False
         if not path.isfile():
             return path, False
+        checkedSoFar += 1
         # universal binaries begin "Mach-O universal binary with 2 architectures"
-        print("?", end="", flush=True)
-        isSingle = (
-            await c.file("-b", path.path, quiet=True)
-        ).output.startswith(b"Mach-O 64-bit bundle")
+        if (checkedSoFar % 1000) == 0:
+            print("?", end="", flush=True)
+        isSingle = (await c.file("-b", path.path, quiet=True)).output.startswith(
+            b"Mach-O 64-bit bundle"
+        )
         return path, isSingle
 
     async for eachPath, isSingleBinary in parallel(
@@ -178,27 +181,17 @@ async def fixArchitectures() -> None:
 start = Deferred.fromCoroutine
 
 
-async def validateArchitectures(path: FilePath) -> None:
+async def validateArchitectures(
+    paths: Iterable[FilePath[str]], report: bool = False
+) -> bool:
     """
-    Ensure that there are no single-architecture binaries in a given directory.
+    Ensure that there are no problematic single-architecture binaries in a
+    given directory.
     """
-    await c.arch(
-        "-arm64",
-        which("pip")[0],
-        "wheel",
-        "-r",
-        "requirements.txt",
-        "-w",
-        ".wheels/downloaded",
-    )
-    await c.arch(
-        "-x86_64",
-        which("pip")[0],
-        "wheel",
-        "-r",
-        "requirements.txt",
-        "-w",
-        ".wheels/downloaded",
-    )
-
-
+    success = True
+    async for eachBinary in findSingleArchitectureBinaries(paths):
+        if report:
+            print()
+            print(eachBinary.path)
+        success = False
+    return success

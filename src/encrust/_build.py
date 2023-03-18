@@ -4,6 +4,7 @@ Future work:
 - integrate cocoapods
 """
 from __future__ import annotations
+import sys
 
 from dataclasses import dataclass
 
@@ -11,6 +12,7 @@ from twisted.python.filepath import FilePath
 from twisted.python.modules import getModule
 
 from ._signing import notarize, signOneFile, signablePathsIn
+from ._architecture import validateArchitectures, fixArchitectures
 from ._spawnutil import c, parallel
 from ._zip import createZipFile
 
@@ -27,7 +29,7 @@ class AppBuilder:
     appleID: str
     teamID: str
     identityHash: str
-    entitlementsPath: FilePath[str] = getModule(__name__).sibling(
+    entitlementsPath: FilePath[str] = getModule(__name__).filePath.sibling(
         "required-python-entitlements.plist"
     )
 
@@ -35,9 +37,26 @@ class AppBuilder:
         """
         Execute the release end to end; build, sign, archive, notarize, staple.
         """
+        await self.fattenEnvironment()
         await self.build()
         await self.signApp()
         await self.notarizeApp()
+
+    async def fattenEnvironment(self) -> None:
+        """
+        Ensure the current virtualenv has all universal2 "fat" binaries.
+        """
+        pathEntries = [FilePath(each) for each in sys.path if each]
+        needsFattening = not await validateArchitectures(pathEntries)
+        if not needsFattening:
+            print("already ok")
+            return
+        await fixArchitectures()
+        stillNeedsFattening = await validateArchitectures(pathEntries, True)
+        if stillNeedsFattening:
+            raise RuntimeError(
+                "single-architecture binaries still exist after fattening"
+            )
 
     def archivePath(self, variant: str) -> FilePath[str]:
         """
@@ -57,7 +76,7 @@ class AppBuilder:
         """
         await c.python("setup.py", "py2app")
 
-    async def authenticateForSigning(self) -> None:
+    async def authenticateForSigning(self, password: str) -> None:
         """
         Prompt the user to authenticate for code-signing and notarization.
         """
@@ -69,6 +88,8 @@ class AppBuilder:
             self.appleID,
             "--team-id",
             self.teamID,
+            "--password",
+            password,
         )
 
     def originalAppPath(self) -> FilePath[str]:
