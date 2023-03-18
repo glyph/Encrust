@@ -125,8 +125,15 @@ async def configure(reactor: Any) -> None:
     Configure this tool.
     """
     print(
-        """
-    TODO: this tool should walk you through configuration. For now:
+    """
+    TODO: this tool should walk you through configuration.
+
+    For now:
+    0. First, set up a Python project built using `py2app`.
+        a. make a virtualenv
+        b. `pip install` your dependencies
+        c. `pip install encrust`
+
     1. enroll in the Apple Developer program at https://developer.apple.com/account
     2. download Xcode.app from https://apps.apple.com/us/app/xcode/id497799835?mt=12
     3. launch Xcode,
@@ -148,6 +155,7 @@ async def configure(reactor: Any) -> None:
         }
     7. go to https://appleid.apple.com/account/manage and log in
     8. click "App-Specific Passwords"
-    9. `encrust auth`
-    """
-    )
+    9. run `encrust auth` and paste the app password before closing the window
+    10. run `encrust release`
+    11. upload dist/<YourApp>-<YourVersion>.release.app.zip somewhere on the web.
+    """)
