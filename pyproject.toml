@@ -12,7 +12,7 @@ build-backend = "setuptools.build_meta"
 name = "encrust"
 description = "Sign, notarize, staple and archive Python mac apps."
 readme = "README.rst"
-version = "2023.03.17"
+version = "2023.03.17.1"
 dependencies = [
     "twisted",
     "click",
