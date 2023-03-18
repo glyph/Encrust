@@ -86,13 +86,21 @@ class Invocation:
     argv: Sequence[str]
 
     async def __call__(
-        self, *, env: Mapping[str, str] = environ, quiet: bool = False
+        self,
+        *,
+        env: Mapping[str, str] = environ,
+        quiet: bool = False,
+        workingDirectory: str | None = None,
     ) -> ProcessResult:
         from twisted.internet import reactor
 
         ipp = InvocationProcessProtocol(self, quiet)
         IReactorProcess(reactor).spawnProcess(
-            ipp, self.executable, [self.executable, *self.argv], environ
+            ipp,
+            self.executable,
+            [self.executable, *self.argv],
+            environ,
+            workingDirectory,
         )
         value = await ipp.d
         if value != 0:
@@ -116,12 +124,16 @@ class Command:
         return Invocation(which(self.name)[0], argv)
 
     async def __call__(
-        self, *args: str, env: Mapping[str, str] = environ, quiet: bool = False
+        self,
+        *args: str,
+        env: Mapping[str, str] = environ,
+        quiet: bool = False,
+        workingDirectory: str | None = None,
     ) -> ProcessResult:
         """
         Immedately run.
         """
-        return await self[args](env=env, quiet=quiet)
+        return await self[args](env=env, quiet=quiet, workingDirectory=workingDirectory)
 
 
 @dataclass
@@ -147,6 +159,8 @@ class SyntaxSugar:
 
 # from twisted.internet import reactor
 c = SyntaxSugar()
+
+
 async def parallel(
     work: Iterable[Coroutine[Deferred[T], T, R]], parallelism: int = 10
 ) -> AsyncIterable[R]:
