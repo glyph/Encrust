@@ -38,6 +38,8 @@ def signablePathsIn(topPath: FilePath[str]) -> Iterable[FilePath[str]]:
         ext = p.splitext()[-1]
         if ext in {".so", ".dylib", ".framework", ".a"}:
             yield p
+        elif p.basename() == 'python' and p.parent().basename() == "MacOS":
+            yield p
 
 
 async def notarize(
