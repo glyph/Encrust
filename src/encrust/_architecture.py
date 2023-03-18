@@ -3,18 +3,14 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import StrEnum, auto
-from typing import (
-    AsyncIterable,
-    Iterable,
-)
+from tempfile import NamedTemporaryFile
+from typing import AsyncIterable, Iterable
 
-from wheel_filename import ParsedWheelFilename, parse_wheel_filename
-
+from ._spawnutil import c, parallel
 from twisted.internet.defer import Deferred
 from twisted.python.filepath import FilePath
 from twisted.python.procutils import which
-
-from ._spawnutil import c, parallel
+from wheel_filename import ParsedWheelFilename, parse_wheel_filename
 
 
 class KnownArchitecture(StrEnum):
@@ -77,6 +73,7 @@ async def findSingleArchitectureBinaries(
     those that will not run on an older Mac because they're fat binary).
     """
     checkedSoFar = 0
+
     async def checkOne(path: FilePath[str]) -> tuple[FilePath[str], bool]:
         """
         Check the given path for a single-architecture binary, returning True
@@ -115,6 +112,12 @@ async def fixArchitectures() -> None:
     tmpDir = ".wheels/tmp"
     fusedDir = ".wheels/fused"
 
+    output = (await c.pip("freeze")).output.decode("utf-8")
+    with NamedTemporaryFile(delete=False) as f:
+        for line in output.split("\n"):
+            if (":" not in line) and ("/" not in line) and (not line.startswith("-e")):
+                f.write((line + "\n").encode("utf-8"))
+
     await c.mkdir("-p", downloadDir, fusedDir, tmpDir)
     for arch in ["arm64", "x86_64"]:
         await c.arch(
@@ -122,30 +125,33 @@ async def fixArchitectures() -> None:
             which("pip")[0],
             "wheel",
             "-r",
-            "requirements.txt",
+            f.name,
             "-w",
             downloadDir,
         )
 
-    needsFusing: defaultdict[str, FusedPair] = defaultdict(FusedPair)
+    needsFusing: defaultdict[tuple[str, str], FusedPair] = defaultdict(FusedPair)
 
     for child in FilePath(downloadDir).children():
         # every wheel in this list should either be architecture-independent,
         # universal2, *or* have *both* arm64 and x86_64 versions.
         pwf = parse_wheel_filename(child.basename())
         arch = wheelNameArchitecture(pwf)
+        fusedPath = FilePath(fusedDir).child(child.basename())
         if arch == KnownArchitecture.purePython:
+            child.moveTo(fusedPath)
             continue
         # OK we need to fuse a wheel
-        fusor = needsFusing[pwf.project]
+        fusor = needsFusing[(pwf.project, pwf.version)]
         if arch == KnownArchitecture.x86_64:
             fusor.x86_64 = child
         if arch == KnownArchitecture.arm64:
             fusor.arm64 = child
         if arch == KnownArchitecture.universal2:
-            fusor.universal2 = child
+            child.moveTo(fusedPath)
+            fusor.universal2 = fusedPath
 
-    async def fuseOne(name: str, fusor: FusedPair) -> None:
+    async def fuseOne(name: str, version: str, fusor: FusedPair) -> None:
         if fusor.universal2 is not None:
             print(f"{name} has universal2; skipping")
             return
@@ -167,14 +173,19 @@ async def fixArchitectures() -> None:
         moveFrom.moveTo(moveTo)
 
     async for each in parallel(
-        fuseOne(name, fusor) for (name, fusor) in needsFusing.items()
+        fuseOne(name, version, fusor)
+        for ((name, version), fusor) in needsFusing.items()
     ):
         pass
 
     await c.pip(
         "install",
+        "--no-index",
+        "--find-links",
+        fusedDir,
         "--force",
-        *[each.path for each in FilePath(fusedDir).globChildren("*.whl")],
+        "--requirement",
+        f.name,
     )
 
 
@@ -190,6 +201,12 @@ async def validateArchitectures(
     """
     success = True
     async for eachBinary in findSingleArchitectureBinaries(paths):
+        if (
+            eachBinary.basename() in {"main-x86_64", "main-arm64"}
+            and eachBinary.parent().basename() == "prebuilt"
+        ):
+            # py2app prebuilt executable stubs don't count
+            continue
         if report:
             print()
             print(eachBinary.path)

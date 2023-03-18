@@ -33,12 +33,15 @@ class AppBuilder:
         "required-python-entitlements.plist"
     )
 
-    async def releaseWorkflow(self) -> None:
+    async def release(self) -> None:
         """
         Execute the release end to end; build, sign, archive, notarize, staple.
         """
         await self.fattenEnvironment()
         await self.build()
+        archOK = await validateArchitectures([self.originalAppPath()], True)
+        if not archOK:
+            raise RuntimeError()
         await self.signApp()
         await self.notarizeApp()
 
@@ -52,17 +55,18 @@ class AppBuilder:
             print("already ok")
             return
         await fixArchitectures()
-        stillNeedsFattening = await validateArchitectures(pathEntries, True)
+        stillNeedsFattening = not await validateArchitectures(pathEntries, True)
         if stillNeedsFattening:
             raise RuntimeError(
                 "single-architecture binaries still exist after fattening"
             )
+        print("all relevant binaries now universal2")
 
     def archivePath(self, variant: str) -> FilePath[str]:
         """
         The path where we should archive our zip file.
         """
-        return FilePath("dist").child(f"{self.name}.{variant}.app.zip")
+        return FilePath("dist").child(f"{self.name}-{self.version}.{variant}.app.zip")
 
     async def archiveApp(self, variant: str) -> FilePath[str]:
         """ """

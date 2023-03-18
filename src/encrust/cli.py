@@ -10,6 +10,7 @@ from ._build import AppBuilder
 from ._spawnutil import c
 from twisted.internet.defer import Deferred
 from twisted.internet.task import react
+from twisted.python.failure import Failure
 
 
 P = ParamSpec("P")
@@ -41,7 +42,9 @@ def reactorized(
         | Generator[Deferred[object], Any, object],
     ]
 ) -> Callable[P, None]:
-    """ """
+    """
+    Wrap an async twisted function for click.
+    """
 
     @wraps(c)
     def forclick(*a, **kw) -> None:
@@ -91,10 +94,13 @@ async def fatten(reactor: Any) -> None:
 
 
 @main.command()
-def build() -> None:
+@reactorized
+async def release(reactor: Any) -> None:
     """
     Build the application.
     """
+    builder = await configuredBuilder()
+    await builder.release()
 
 
 @main.command()
