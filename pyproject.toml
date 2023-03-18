@@ -23,3 +23,6 @@ dependencies = [
 
 [project.scripts]
 encrust = "encrust.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/glyph/Encrust"
