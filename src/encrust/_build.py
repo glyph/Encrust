@@ -125,7 +125,8 @@ class AppBuilder:
         await notarize(
             appleID=self.appleID,
             teamID=self.teamID,
-            archivePath=await self.archiveApp("signed"),
+            archivePath=await self.archiveApp("for-notarizing"),
             applicationPath=self.originalAppPath(),
             notarizeProfile=self.notarizeProfile,
         )
+        await self.archiveApp("release")
