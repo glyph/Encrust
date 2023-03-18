@@ -122,11 +122,13 @@ class AppBuilder:
         Submit the built application to Apple for notarization and wait until we
         have seen a response.
         """
+        preReleasePath = await self.archiveApp("for-notarizing")
         await notarize(
             appleID=self.appleID,
             teamID=self.teamID,
-            archivePath=await self.archiveApp("for-notarizing"),
+            archivePath=preReleasePath,
             applicationPath=self.originalAppPath(),
             notarizeProfile=self.notarizeProfile,
         )
         await self.archiveApp("release")
+        preReleasePath.remove()
