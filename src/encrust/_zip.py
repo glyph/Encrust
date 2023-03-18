@@ -14,7 +14,7 @@ async def createZipFile(zipFile: FilePath, directoryToZip: FilePath) -> None:
         "-k",
         "--sequesterRsrc",
         "--keepParent",
-        zipPath,
         dirPath.basename(),
+        zipPath,
         workingDirectory=dirPath.dirname(),
     )
