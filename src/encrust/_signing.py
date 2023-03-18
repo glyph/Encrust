@@ -38,7 +38,7 @@ def signablePathsIn(topPath: FilePath[str]) -> Iterable[FilePath[str]]:
     for p in topPath.walk():
         ext = p.splitext()[-1]
         print(ext)
-        if ext in {".so", ".dylib", ".framework"}:
+        if ext in {".so", ".dylib", ".framework", ".a"}:
             yield p
 
 
