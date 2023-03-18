@@ -68,21 +68,6 @@ def main() -> None:
 
 
 @main.command()
-def sign() -> None:
-    """
-    Locally code-sign your appliation.
-    """
-
-
-@main.command()
-def notarize() -> None:
-    """
-    Submit your application to Apple for notarization and then staple it
-    locally.
-    """
-
-
-@main.command()
 @reactorized
 async def fatten(reactor: Any) -> None:
     """
