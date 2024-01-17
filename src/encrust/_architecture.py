@@ -159,7 +159,7 @@ async def fixArchitectures() -> None:
 
         left = fusor.arm64
         if left is None:
-            raise RuntimeError(f"no amd64 architecture for {name}")
+            raise RuntimeError(f"no arm64 architecture for {name}")
         right = fusor.x86_64
         if right is None:
             raise RuntimeError(f"no x86_64 architecture for {name}")
