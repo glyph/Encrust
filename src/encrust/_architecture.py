@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from enum import StrEnum, auto
+from enum import Enum, auto
 from tempfile import NamedTemporaryFile
 from typing import AsyncIterable, Iterable
 
@@ -13,7 +13,7 @@ from twisted.python.procutils import which
 from wheel_filename import ParsedWheelFilename, parse_wheel_filename
 
 
-class KnownArchitecture(StrEnum):
+class KnownArchitecture(Enum):
     x86_64 = auto()
     arm64 = auto()
     universal2 = auto()
@@ -136,7 +136,7 @@ async def fixArchitectures() -> None:
         # every wheel in this list should either be architecture-independent,
         # universal2, *or* have *both* arm64 and x86_64 versions.
         pwf = parse_wheel_filename(child.basename())
-        arch = wheelNameArchitecture(pwf)
+        arch = wheelNameArchitecture(pwf).name
         fusedPath = FilePath(fusedDir).child(child.basename())
         if arch == KnownArchitecture.purePython:
             child.moveTo(fusedPath)
