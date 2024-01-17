@@ -55,7 +55,9 @@ def wheelNameArchitecture(pwf: ParsedWheelFilename) -> KnownArchitecture:
         return KnownArchitecture.purePython
     allSpecifics = list(specifics(pwf))
     if len(allSpecifics) != 1:
-        raise ValueError(f"don't know how to handle multi-tag wheels {pwf!r} {allSpecifics!r}")
+        raise ValueError(
+            f"don't know how to handle multi-tag wheels {pwf!r} {allSpecifics!r}"
+        )
     return allSpecifics[0].architecture
 
 
@@ -101,6 +103,56 @@ async def findSingleArchitectureBinaries(
             yield eachPath
 
 
+def determineNeedsFusing(
+    downloadDir: str, fusedDir: str
+) -> Iterable[tuple[tuple[str, str], FusedPair]]:
+    needsFusing: defaultdict[tuple[str, str], FusedPair] = defaultdict(FusedPair)
+
+    for child in FilePath(downloadDir).children():
+        # every wheel in this list should either be architecture-independent,
+        # universal2, *or* have *both* arm64 and x86_64 versions.
+        pwf = parse_wheel_filename(child.basename())
+        arch = wheelNameArchitecture(pwf)
+        fusedPath = FilePath(fusedDir).child(child.basename())
+        if arch == KnownArchitecture.purePython:
+            child.moveTo(fusedPath)
+            continue
+        # OK we need to fuse a wheel
+        fusor = needsFusing[(pwf.project, pwf.version)]
+        if arch == KnownArchitecture.x86_64:
+            fusor.x86_64 = child
+        if arch == KnownArchitecture.arm64:
+            fusor.arm64 = child
+        if arch == KnownArchitecture.universal2:
+            child.moveTo(fusedPath)
+            fusor.universal2 = fusedPath
+    return needsFusing.items()
+
+
+async def fuseOne(
+    tmpDir: str, fusedDir: str, name: str, version: str, fusor: FusedPair
+) -> None:
+    if fusor.universal2 is not None:
+        print(f"{name} has universal2; skipping")
+        return
+
+    left = fusor.arm64
+    if left is None:
+        raise RuntimeError(f"no arm64 architecture for {name}")
+    right = fusor.x86_64
+    if right is None:
+        raise RuntimeError(f"no x86_64 architecture for {name}")
+    await c["delocate-fuse"](
+        "--verbose", f"--wheel-dir={tmpDir}", left.path, right.path
+    )
+    moveFrom = FilePath(tmpDir).child(left.basename())
+    # TODO: properly rewrite / unparse structure
+    moveTo = FilePath(fusedDir).child(
+        left.basename().replace("_arm64.whl", "_universal2.whl")
+    )
+    moveFrom.moveTo(moveTo)
+
+
 async def fixArchitectures() -> None:
     """
     Ensure that all wheels installed in the current virtual environment are
@@ -131,51 +183,9 @@ async def fixArchitectures() -> None:
             downloadDir,
         )
 
-    needsFusing: defaultdict[tuple[str, str], FusedPair] = defaultdict(FusedPair)
-
-    for child in FilePath(downloadDir).children():
-        # every wheel in this list should either be architecture-independent,
-        # universal2, *or* have *both* arm64 and x86_64 versions.
-        pwf = parse_wheel_filename(child.basename())
-        arch = wheelNameArchitecture(pwf).name
-        fusedPath = FilePath(fusedDir).child(child.basename())
-        if arch == KnownArchitecture.purePython:
-            child.moveTo(fusedPath)
-            continue
-        # OK we need to fuse a wheel
-        fusor = needsFusing[(pwf.project, pwf.version)]
-        if arch == KnownArchitecture.x86_64:
-            fusor.x86_64 = child
-        if arch == KnownArchitecture.arm64:
-            fusor.arm64 = child
-        if arch == KnownArchitecture.universal2:
-            child.moveTo(fusedPath)
-            fusor.universal2 = fusedPath
-
-    async def fuseOne(name: str, version: str, fusor: FusedPair) -> None:
-        if fusor.universal2 is not None:
-            print(f"{name} has universal2; skipping")
-            return
-
-        left = fusor.arm64
-        if left is None:
-            raise RuntimeError(f"no arm64 architecture for {name}")
-        right = fusor.x86_64
-        if right is None:
-            raise RuntimeError(f"no x86_64 architecture for {name}")
-        await c["delocate-fuse"](
-            "--verbose", f"--wheel-dir={tmpDir}", left.path, right.path
-        )
-        moveFrom = FilePath(tmpDir).child(left.basename())
-        # TODO: properly rewrite / unparse structure
-        moveTo = FilePath(fusedDir).child(
-            left.basename().replace("_arm64.whl", "_universal2.whl")
-        )
-        moveFrom.moveTo(moveTo)
-
     async for each in parallel(
-        fuseOne(name, version, fusor)
-        for ((name, version), fusor) in needsFusing.items()
+        fuseOne(tmpDir, fusedDir, name, version, fusor)
+        for ((name, version), fusor) in determineNeedsFusing(downloadDir, fusedDir)
     ):
         pass
 
@@ -194,7 +204,7 @@ start = Deferred.fromCoroutine
 
 
 async def validateArchitectures(
-    paths: Iterable[FilePath[str]], report: bool = False
+    paths: Iterable[FilePath[str]], report: bool = True
 ) -> bool:
     """
     Ensure that there are no problematic single-architecture binaries in a
@@ -203,10 +213,23 @@ async def validateArchitectures(
     success = True
     async for eachBinary in findSingleArchitectureBinaries(paths):
         if (
-            eachBinary.basename() in {"main-x86_64", "main-arm64"}
-            and eachBinary.parent().basename() == "prebuilt"
+            # exclude py2app prebuilt executable stubs
+            (
+                eachBinary.basename() in {"main-x86_64", "main-arm64"}
+                and eachBinary.parent().basename() == "prebuilt"
+            ) or
+            # exclude debugpy attach stubs
+            (
+                eachBinary.basename() == "attach_x86_64.dylib" and
+                eachBinary.parent().basename() == "pydevd_attach_to_process"
+            ) or
+            # exclude delocate's own tests
+            (
+                eachBinary.parent().basename() == "data" and
+                eachBinary.parent().parent().basename() == "tests" and
+                eachBinary.parent().parent().parent().basename() == "delocate"
+            )
         ):
-            # py2app prebuilt executable stubs don't count
             continue
         if report:
             print()
