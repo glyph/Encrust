@@ -36,11 +36,12 @@ def specifics(pwf: ParsedWheelFilename) -> Iterable[PlatformSpecifics]:
     """
     for tag in pwf.platform_tags:
         splitted = tag.split("_", 3)
+        print("split", splitted)
         if len(splitted) != 4:
             continue
         os, major, minor, arch = splitted
         try:
-            parsedArch = KnownArchitecture(arch)
+            parsedArch = KnownArchitecture[arch]
         except ValueError:
             continue
         yield PlatformSpecifics(os, int(major), int(minor), parsedArch)
@@ -54,7 +55,7 @@ def wheelNameArchitecture(pwf: ParsedWheelFilename) -> KnownArchitecture:
         return KnownArchitecture.purePython
     allSpecifics = list(specifics(pwf))
     if len(allSpecifics) != 1:
-        raise ValueError(f"don't know how to handle multi-tag wheels {pwf!r}")
+        raise ValueError(f"don't know how to handle multi-tag wheels {pwf!r} {allSpecifics!r}")
     return allSpecifics[0].architecture
 
 
