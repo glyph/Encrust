@@ -142,15 +142,9 @@ async def fuseOne(
     right = fusor.x86_64
     if right is None:
         raise RuntimeError(f"no x86_64 architecture for {name}")
-    await c["delocate-fuse"](
-        "--verbose", f"--wheel-dir={tmpDir}", left.path, right.path
+    await c["delocate-merge"](
+        "--verbose", f"--wheel-dir={fusedDir}", left.path, right.path
     )
-    moveFrom = FilePath(tmpDir).child(left.basename())
-    # TODO: properly rewrite / unparse structure
-    moveTo = FilePath(fusedDir).child(
-        left.basename().replace("_arm64.whl", "_universal2.whl")
-    )
-    moveFrom.moveTo(moveTo)
 
 
 async def fixArchitectures() -> None:
