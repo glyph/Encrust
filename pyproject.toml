@@ -16,7 +16,7 @@ version = "2023.03.17.3"
 dependencies = [
     "twisted",
     "click",
-    "delocate",
+    "delocate >= 0.12.0",
     "py2app",
     "wheel_filename",
 ]
