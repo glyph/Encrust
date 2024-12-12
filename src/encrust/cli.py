@@ -6,7 +6,7 @@ from typing import Any, Awaitable, Callable, Concatenate, Coroutine, Generator, 
 
 import click
 
-from ._build import AppBuilder
+from ._build import AppBuilder, whichSetup
 from ._spawnutil import c
 from twisted.internet.defer import Deferred
 from twisted.internet.task import react
@@ -23,7 +23,7 @@ async def configuredBuilder() -> AppBuilder:
     """
     with open(expanduser("~/.encrust.json")) as f:
         obj = load(f)
-    lines = await c.python("setup.py", "--name", "--version")
+    lines = await c.python(whichSetup(), "--name", "--version")
     name, version = lines.output.decode("utf-8").strip().split("\n")
     return AppBuilder(
         name=name,

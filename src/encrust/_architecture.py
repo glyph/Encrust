@@ -97,7 +97,20 @@ async def findSingleArchitectureBinaries(
         return path, isSingle
 
     async for eachPath, isSingleBinary in parallel(
-        (checkOne(subpath) for path in paths for subpath in path.walk()), 16
+        (
+            checkOne(subpath)
+            for path in paths
+            for subpath in path.walk(
+                # if we are in a virtualenv, but our system site packages has
+                # single-architecture binaries installed, we should not be
+                # concerned with those, as they're not on our import path -
+                # even though they *do* live below an entry on sys.path (the
+                # stdlib).
+                lambda sub: sub.basename()
+                != "site-packages"
+            )
+        ),
+        16,
     ):
         if isSingleBinary:
             yield eachPath
@@ -211,22 +224,24 @@ async def validateArchitectures(
             (
                 eachBinary.basename() in {"main-x86_64", "main-arm64"}
                 and eachBinary.parent().basename() == "prebuilt"
-            ) or
+            )
+            or
             # exclude debugpy attach stubs
             (
-                eachBinary.basename() == "attach_x86_64.dylib" and
-                eachBinary.parent().basename() == "pydevd_attach_to_process"
-            ) or
+                eachBinary.basename() == "attach_x86_64.dylib"
+                and eachBinary.parent().basename() == "pydevd_attach_to_process"
+            )
+            or
             # exclude delocate's own tests
             (
-                eachBinary.parent().basename() == "data" and
-                eachBinary.parent().parent().basename() == "tests" and
-                eachBinary.parent().parent().parent().basename() == "delocate"
+                eachBinary.parent().basename() == "data"
+                and eachBinary.parent().parent().basename() == "tests"
+                and eachBinary.parent().parent().parent().basename() == "delocate"
             )
         ):
             continue
         if report:
             print()
-            print(eachBinary.path)
+            print(f"single-architecture binary: {eachBinary.path}")
         success = False
     return success

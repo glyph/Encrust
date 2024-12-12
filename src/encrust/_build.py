@@ -17,6 +17,13 @@ from ._spawnutil import c, parallel
 from ._zip import createZipFile
 
 
+def whichSetup() -> str:
+    cwd = FilePath(".")
+    for possibility in ['py2app_setup.py', 'setup.py']:
+        if cwd.child(possibility).exists():
+            return possibility
+    raise Exception("no setup.py found")
+
 @dataclass
 class AppBuilder:
     """
@@ -58,7 +65,7 @@ class AppBuilder:
         stillNeedsFattening = not await validateArchitectures(pathEntries, True)
         if stillNeedsFattening:
             raise RuntimeError(
-                "single-architecture binaries still exist after fattening"
+                "single-architecture binaries still exist after fattening: {stillNeedsFattening}"
             )
         print("all relevant binaries now universal2")
 
@@ -78,7 +85,7 @@ class AppBuilder:
         """
         Just run py2app.
         """
-        await c.python("setup.py", "py2app")
+        await c.python(whichSetup(), "py2app")
 
     async def authenticateForSigning(self, password: str) -> None:
         """
