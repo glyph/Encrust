@@ -21,8 +21,17 @@ dependencies = [
     "wheel_filename",
 ]
 
+[project.optional-dependencies]
+mypy = [
+    "mypy",
+    "mypy-zope",
+]
+
 [project.scripts]
 encrust = "encrust.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/glyph/Encrust"
+
+[tool.mypy]
+plugins = ["mypy_zope:plugin"]
