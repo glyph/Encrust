@@ -1,8 +1,18 @@
 from functools import wraps
 from getpass import getpass
 from json import load
+from os import environ
 from os.path import expanduser
-from typing import Any, Awaitable, Callable, Concatenate, Coroutine, Generator, ParamSpec, TypeVar
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Concatenate,
+    Coroutine,
+    Generator,
+    ParamSpec,
+    TypeVar,
+)
 
 import click
 
@@ -25,6 +35,8 @@ async def configuredBuilder() -> AppBuilder:
         obj = load(f)
     lines = await c.python(whichSetup(), "--name", "--version")
     name, version = lines.output.decode("utf-8").strip().split("\n")
+    name = environ.get("ENCRUST_APP_NAME", name)
+    version = environ.get("ENCRUST_APP_VERSION", version)
     return AppBuilder(
         name=name,
         version=version,
@@ -54,7 +66,9 @@ def reactorized(
                     await c(reactor, *a, **kw)
                 except Exception:
                     print(Failure().getTraceback())
+
             return Deferred.fromCoroutine(ar())
+
         react(r, [])
 
     return forclick
@@ -76,6 +90,17 @@ async def fatten(reactor: Any) -> None:
     """
     builder = await configuredBuilder()
     await builder.fattenEnvironment()
+
+
+@main.command()
+@reactorized
+async def build(reactor: Any) -> None:
+    """
+    Build the application.
+    """
+    builder = await configuredBuilder()
+    await builder.build()
+    await builder.signApp()
 
 
 @main.command()
@@ -110,7 +135,7 @@ async def configure(reactor: Any) -> None:
     Configure this tool.
     """
     print(
-    """
+        """
     TODO: this tool should walk you through configuration.
 
     For now:
@@ -143,4 +168,5 @@ async def configure(reactor: Any) -> None:
     9. run `encrust auth` and paste the app password before closing the window
     10. run `encrust release`
     11. upload dist/<YourApp>-<YourVersion>.release.app.zip somewhere on the web.
-    """)
+    """
+    )
