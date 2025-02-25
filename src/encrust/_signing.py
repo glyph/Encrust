@@ -34,7 +34,7 @@ def signablePathsIn(topPath: FilePath[str]) -> Iterable[FilePath[str]]:
     """
     What files need to be individually code-signed within a given bundle?
     """
-    for p in topPath.walk():
+    for p in topPath.walk(lambda subp: (not subp.islink() and subp.isdir())):
         ext = p.splitext()[-1]
         if ext in {".so", ".dylib", ".framework", ".a", ".app"}:
             yield p
