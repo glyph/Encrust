@@ -86,6 +86,6 @@ async def notarize(
         f"--apple-id={appleID}",
         f"--team-id={teamID}",
         f"--keychain-profile={notarizeProfile}",
-        f"--wait",
+        "--wait",
     )
     await c.xcrun("stapler", "staple", applicationPath.path)
