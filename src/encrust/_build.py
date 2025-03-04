@@ -19,7 +19,7 @@ from ._zip import createZipFile
 
 def whichSetup() -> str:
     cwd = FilePath(".")
-    for possibility in ['py2app_setup.py', 'setup.py']:
+    for possibility in ["py2app_setup.py", "setup.py"]:
         if cwd.child(possibility).exists():
             return possibility
     raise Exception("no setup.py found")
