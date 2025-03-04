@@ -162,7 +162,7 @@ c = SyntaxSugar()
 
 
 async def parallel(
-    work: Iterable[Coroutine[Deferred[T], T, R]], parallelism: int = 10
+    work: Iterable[Coroutine[Deferred[T], T, R]], parallelism: int = 1
 ) -> AsyncIterable[R]:
     """
     Perform the given work with a limited level of parallelism.
