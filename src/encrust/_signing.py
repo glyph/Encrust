@@ -30,18 +30,41 @@ async def signOneFile(
     )
 
 
+MACH_O_MAGIC = {
+    b"\xca\xfe\xba\xbe",
+    b"\xcf\xfa\xed\xfe",
+    b"\xce\xfa\xed\xfe",
+    b"\xbe\xba\xfe\xca",
+    b"\xfe\xed\xfa\xcf",
+    b"\xfe\xed\xfa\xce",
+}
+
+
+def hasMachOMagic(p: FilePath[str]) -> bool:
+    with p.open("r") as f:
+        magic = f.read(4)
+        return magic in MACH_O_MAGIC
+
+
 def signablePathsIn(topPath: FilePath[str]) -> Iterable[FilePath[str]]:
     """
     What files need to be individually code-signed within a given bundle?
     """
+    built = []
     for p in topPath.walk(lambda subp: (not subp.islink() and subp.isdir())):
         if p.islink():
             continue
         ext = p.splitext()[-1]
-        if ext in {".so", ".dylib", ".framework", ".a", ".app"}:
-            yield p
-        elif p.basename() == 'python' and p.parent().basename() == "MacOS":
-            yield p
+        if p.isfile():
+            if ext == "":
+                if hasMachOMagic(p):
+                    built.append(p)
+            if ext in {".so", ".dylib", ".a"}:
+                built.append(p)
+        if p.isdir():
+            if ext in {".framework", ".app", ".xpc"}:
+                built.append(p)
+    return reversed(built)
 
 
 async def notarize(
