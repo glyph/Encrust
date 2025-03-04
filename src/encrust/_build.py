@@ -112,6 +112,9 @@ class AppBuilder:
         """
         return FilePath("./dist").child(self.name + ".app")
 
+    def signablePaths(self) -> Iterable[FilePath]:
+        return signablePathsIn(self.originalAppPath())
+
     async def signApp(self) -> None:
         """
         Find all binary files which need to be signed within the bundle and run
