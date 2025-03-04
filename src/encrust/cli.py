@@ -79,6 +79,13 @@ def main() -> None:
     Utility for building, signing, and notarizing macOS applications.
     """
 
+@main.command()
+@reactorized
+async def signable(reactor: Any) -> None:
+    builder = await configuredBuilder()
+    for p in builder.signablePaths():
+        print(p.path)
+
 
 @main.command()
 @reactorized
