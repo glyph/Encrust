@@ -3,16 +3,18 @@ Future work:
 
 - integrate cocoapods
 """
-from __future__ import annotations
-import sys
 
+from __future__ import annotations
+
+import sys
 from dataclasses import dataclass
+from typing import Iterable
 
 from twisted.python.filepath import FilePath
 from twisted.python.modules import getModule
 
-from ._signing import notarize, signOneFile, signablePathsIn
-from ._architecture import validateArchitectures, fixArchitectures
+from ._architecture import fixArchitectures, validateArchitectures
+from ._signing import notarize, signablePathsIn, signOneFile
 from ._spawnutil import c, parallel
 from ._zip import createZipFile
 
@@ -23,6 +25,7 @@ def whichSetup() -> str:
         if cwd.child(possibility).exists():
             return possibility
     raise Exception("no setup.py found")
+
 
 @dataclass
 class AppBuilder:
