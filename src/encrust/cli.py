@@ -5,7 +5,6 @@ from os import environ
 from os.path import expanduser
 from typing import (
     Any,
-    Awaitable,
     Callable,
     Concatenate,
     Coroutine,
