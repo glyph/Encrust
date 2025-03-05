@@ -14,8 +14,8 @@ from twisted.python.filepath import FilePath
 from twisted.python.modules import getModule
 
 from ._architecture import fixArchitectures, validateArchitectures
-from ._signing import notarize, signablePathsIn, signOneFile
-from ._spawnutil import c, parallel
+from ._signing import notarize, signablePathsIn, CodeSigner
+from ._spawnutil import c
 from ._zip import createZipFile
 
 
@@ -120,15 +120,12 @@ class AppBuilder:
         Find all binary files which need to be signed within the bundle and run
         C{codesign} to sign them.
         """
-        top = self.originalAppPath()
-        async for signResult in parallel(
-            (
-                signOneFile(p, self.identityHash, self.entitlementsPath)
-                for p in signablePathsIn(top)
-            )
-        ):
-            pass
-        await signOneFile(top, self.identityHash, self.entitlementsPath)
+        signer = CodeSigner(
+            self.originalAppPath(),
+            self.identityHash,
+            self.entitlementsPath,
+        )
+        await signer.sign()
 
     async def notarizeApp(self) -> None:
         """

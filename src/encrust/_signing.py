@@ -1,33 +1,61 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from typing import Iterable
 
+from twisted.internet.defer import Deferred
 from twisted.python.filepath import FilePath
 
-from ._spawnutil import c
+from ._spawnutil import c, parallel
 
 
-async def signOneFile(
-    fileToSign: FilePath[str],
-    codesigningIdentity: str,
-    entitlements: FilePath[str],
-) -> None:
-    """
-    Code sign a single file.
-    """
-    fileStr = fileToSign.path
-    entitlementsStr = entitlements.path
-    print("✓", end="", flush=True)
-    await c.codesign(
-        "--sign",
-        codesigningIdentity,
-        "--entitlements",
-        entitlementsStr,
-        "--force",
-        "--options",
-        "runtime",
-        fileStr,
-    )
+@dataclass
+class CodeSigner:
+    bundle: FilePath[str]
+    codesigningIdentity: str
+    entitlements: FilePath[str]
+    progress: dict[FilePath[str], Deferred[None]] = field(default_factory=dict)
+
+    async def sign(self) -> None:
+        active = 0
+        async def signOneFile(fileToSign: FilePath[str]) -> None:
+            """
+            Code sign a single file.
+            """
+            nonlocal active
+            fileStr = fileToSign.path
+            entitlementsStr = self.entitlements.path
+            print(f"code signing (|| {active}/{len(self.progress)}) {fileToSign}", flush=True)
+            allChildren = []
+            for eachMaybeChild in self.progress:
+                if fileToSign in eachMaybeChild.parents():
+                    allChildren.append((eachMaybeChild, self.progress[eachMaybeChild]))
+            self.progress[fileToSign] = Deferred()
+            for pn, toAwait in allChildren:
+                print(f"waiting for {pn.path!r}…")
+                await toAwait
+                print(f"done waiting for {pn.path!r}!")
+            try:
+                active += 1
+                await c.codesign(
+                    "--sign",
+                    self.codesigningIdentity,
+                    "--entitlements",
+                    entitlementsStr,
+                    "--force",
+                    "--options",
+                    "runtime",
+                    fileStr,
+                )
+            finally:
+                self.progress.pop(fileToSign).callback(None)
+                active -= 1
+            print(f"finished signing (|| {active}/{len(self.progress)}) {fileToSign}", flush=True)
+
+        async for signResult in parallel(
+            (signOneFile(p) for p in signablePathsIn(self.bundle))
+        ):
+            pass
 
 
 MACH_O_MAGIC = {

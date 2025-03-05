@@ -86,6 +86,12 @@ async def signable(reactor: Any) -> None:
     for p in builder.signablePaths():
         print(p.path)
 
+@main.command()
+@reactorized
+async def sign(reactor: Any) -> None:
+    builder = await configuredBuilder()
+    await builder.signApp()
+
 
 @main.command()
 @reactorized

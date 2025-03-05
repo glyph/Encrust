@@ -60,7 +60,7 @@ class InvocationProcessProtocol(ProcessProtocol):
         if not self.quiet:
             print(
                 f"{self.invocation.executable} {' '.join(self.invocation.argv)}:",
-                data.decode("utf-8", "replace"),
+                data.decode("utf-8", "replace").rstrip("\n"),
             )
 
     def outReceived(self, outData: bytes) -> None:
@@ -162,7 +162,7 @@ c = SyntaxSugar()
 
 
 async def parallel(
-    work: Iterable[Coroutine[Deferred[T], T, R]], parallelism: int = 1
+    work: Iterable[Coroutine[Deferred[T], T, R]], parallelism: int = 18
 ) -> AsyncIterable[R]:
     """
     Perform the given work with a limited level of parallelism.
