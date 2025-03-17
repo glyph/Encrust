@@ -82,6 +82,9 @@ def main() -> None:
 @main.command()
 @reactorized
 async def signable(reactor: Any) -> None:
+    """
+    (Debugging): print a list of every signable path in an already-built bundle.
+    """
     builder = await configuredBuilder()
     for p in builder.signablePaths():
         print(p.path)
@@ -89,6 +92,9 @@ async def signable(reactor: Any) -> None:
 @main.command()
 @reactorized
 async def sign(reactor: Any) -> None:
+    """
+    (Debugging): Just locally codesign (and do not notarize) an already-built app.
+    """
     builder = await configuredBuilder()
     await builder.signApp()
 
