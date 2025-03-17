@@ -27,7 +27,9 @@ class KnownArchitecture(Enum):
 @dataclass(frozen=True)
 class PlatformSpecifics:
     """
-    A data structure representing the specific details of a macOS platform.
+    A data structure representing the specific details of a macOS platform
+    description for a python wheel; i.e. operating system version and binary
+    architecture.
     """
 
     os: str
@@ -38,7 +40,8 @@ class PlatformSpecifics:
 
 def specifics(pwf: ParsedWheelFilename) -> Iterable[PlatformSpecifics]:
     """
-    Extract platform specific information from the given wheel.
+    Enumerate the specific macOS platforms supported by a given wheel based on
+    its filename.
     """
     for tag in pwf.platform_tags:
         splitted = tag.split("_", 3)
