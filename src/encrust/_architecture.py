@@ -14,6 +14,10 @@ from wheel_filename import ParsedWheelFilename, parse_wheel_filename
 
 
 class KnownArchitecture(Enum):
+    """
+    One of the known binary architectures that a wheel can support on macOS;
+    intel, arm, both, or pure-python.
+    """
     x86_64 = auto()
     arm64 = auto()
     universal2 = auto()
@@ -22,7 +26,9 @@ class KnownArchitecture(Enum):
 
 @dataclass(frozen=True)
 class PlatformSpecifics:
-    """ """
+    """
+    A data structure representing the specific details of a macOS platform.
+    """
 
     os: str
     major: int
