@@ -67,6 +67,10 @@ class AppCastDeployment:
         )
         await c.rsync(
             "-avz",
+            # NB: homebrew version required, since this is a new feature as of
+            # 2020 and apple always insist on core utilities being decades out
+            # of date
+            "--mkpath",
             "--delete",
             str(self.localUpdatesFolder).rstrip("/") + "/",
             f"{self.remoteHost}:{self.remotePath.rstrip('/')}/",
