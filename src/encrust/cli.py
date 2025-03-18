@@ -1,3 +1,4 @@
+import sys
 from functools import wraps
 from getpass import getpass
 from json import load
@@ -17,6 +18,8 @@ import click
 
 from ._build import AppBuilder, whichSetup
 from ._spawnutil import c
+from .api import AppDescription
+
 from twisted.internet.defer import Deferred
 from twisted.internet.task import react
 from twisted.python.failure import Failure
@@ -51,7 +54,7 @@ def reactorized(
         Concatenate[Any, P],
         Coroutine[Deferred[object], Any, object]
         | Generator[Deferred[object], Any, object],
-    ]
+    ],
 ) -> Callable[P, None]:
     """
     Wrap an async twisted function for click.
@@ -79,6 +82,7 @@ def main() -> None:
     Utility for building, signing, and notarizing macOS applications.
     """
 
+
 @main.command()
 @reactorized
 async def signable(reactor: Any) -> None:
@@ -88,6 +92,7 @@ async def signable(reactor: Any) -> None:
     builder = await configuredBuilder()
     for p in builder.signablePaths():
         print(p.path)
+
 
 @main.command()
 @reactorized
@@ -129,6 +134,24 @@ async def release(reactor: Any) -> None:
     """
     builder = await configuredBuilder()
     await builder.release()
+
+
+def loadDescription() -> AppDescription:
+    sys.path.append(".")
+    import encrust_setup  # type:ignore[import-not-found]
+
+    return encrust_setup.description
+
+
+@main.command()
+@reactorized
+async def getsparkle(reactor: Any) -> None:
+    description = loadDescription()
+    if description.sparkleData is None:
+        print("Sparkle not specified, not downloading.")
+        sys.exit(1)
+
+    await description.sparkleData.sparkleFramework.download()
 
 
 @main.command()
