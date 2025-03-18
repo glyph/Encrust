@@ -163,6 +163,20 @@ async def getsparkle(reactor: Any) -> None:
 
     await description.sparkleData.sparkleFramework.download()
 
+@main.command()
+@reactorized
+async def appcastify(reactor: Any) -> None:
+    """
+    Update, sign, and deploy the Sparkle appcast for the current application.
+
+    Note that this currently must be manually done *after* `encrust release`,
+    but we should probably integrate it into that process.
+    """
+    description = loadDescription()
+    if description.sparkleData is None:
+        print("Sparkle not specified, not generating appcast.")
+        sys.exit(1)
+    await description.sparkleData.deploy()
 
 @main.command()
 @reactorized
