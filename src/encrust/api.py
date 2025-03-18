@@ -33,10 +33,10 @@ class SparkleFrameworkInfo:
         a known location (asynchronously, by spawning subprocesses using a
         Twisted reactor).
         """
-        archiveDownloadPath = str(self.frameworkPath.parent)
+        archiveDownloadPath = str(self.archivePath.parent)
         await c.mkdir("-p", archiveDownloadPath)
         await c.curl("-LO", self.downloadURL, workingDirectory=archiveDownloadPath)
-        await c.tar("xf", workingDirectory=archiveDownloadPath)
+        await c.tar("xf", self.archivePath.name, workingDirectory=archiveDownloadPath)
 
 
 @dataclass(frozen=True)
@@ -94,7 +94,7 @@ class SparkleData:
         remoteHost: str,
         remotePath: str,
     ) -> SparkleData:
-        return cls(
+        self = cls(
             publicEDKey=publicEDKey,
             feedURL=feedURL,
             sparkleFramework=SparkleFrameworkInfo.fromVersion(sparkleVersion),
@@ -105,6 +105,10 @@ class SparkleData:
                 remotePath=remotePath,
             ),
         )
+        return self
+
+    async def deploy(self) -> None:
+        await self.deployment.deploy(self.sparkleFramework)
 
 
 def _prefix(p: Path, fx: str) -> Path:
@@ -123,7 +127,7 @@ class AppDescription:
     mainPythonScript: Path
 
     dataFiles: Sequence[Path] = ()
-    otherFrameworks: Sequence[Path] = []
+    otherFrameworks: Sequence[Path] = ()
     dockIconAtStart: bool = True
     sparkleData: SparkleData | None = None
 
@@ -167,6 +171,8 @@ class AppDescription:
             return ""
 
         mode = check_mode()
+        if mode == "":
+            return self
 
         return AppDescription(
             bundleID=".".join(
