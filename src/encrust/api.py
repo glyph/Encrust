@@ -56,7 +56,7 @@ class AppCastDeployment:
     remotePath: str
 
     async def deploy(self, fwinfo: SparkleFrameworkInfo) -> None:
-        self.localUpdatesFolder.mkdir(exist_ok=True)
+        self.localUpdatesFolder.mkdir(parents=True, exist_ok=True)
         for release in Path("dist").glob("*.release.app.zip"):
             target = self.localUpdatesFolder / release.name
             if target.exists():
