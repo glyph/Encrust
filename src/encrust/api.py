@@ -196,7 +196,7 @@ class AppDescription:
         """
         # Import py2app for its side-effect of registering the setuptools
         # command.
-        __import__("py2app")
+        assert __import__("py2app") is not None
         sparklePlist: Mapping[str, str] = (
             {} if self.sparkleData is None else self.sparkleData.plist()
         )
@@ -224,25 +224,27 @@ class AppDescription:
         }
         return {
             "data_files": [str(f) for f in self.dataFiles],
-            "py2app": {
-                "plist": infoPList,
-                "iconfile": str(self.icnsFile),
-                "app": [str(self.mainPythonScript)],
-                "frameworks": [
-                    *sparkleFrameworks,
-                    *self.otherFrameworks,
-                ],
-                "excludes": [
-                    # Excluding setuptools is a workaround for a problem in
-                    # py2app -
-                    # https://github.com/ronaldoussoren/py2app/issues/531 - and
-                    # despite a couple of spuriously declared transitive
-                    # dependencies on it
-                    # (https://github.com/zopefoundation/zope.interface/issues/339,
-                    # https://github.com/twisted/incremental/issues/141) we
-                    # don't actually need it
-                    "setuptools",
-                ],
-                "dylib_excludes": [str(each) for each in dylibExcludes],
+            "options": {
+                "py2app": {
+                    "plist": infoPList,
+                    "iconfile": str(self.icnsFile),
+                    "app": [str(self.mainPythonScript)],
+                    "frameworks": [
+                        *sparkleFrameworks,
+                        *self.otherFrameworks,
+                    ],
+                    "excludes": [
+                        # Excluding setuptools is a workaround for a problem in
+                        # py2app -
+                        # https://github.com/ronaldoussoren/py2app/issues/531 -
+                        # and despite a couple of spuriously declared
+                        # transitive dependencies on it
+                        # (https://github.com/zopefoundation/zope.interface/issues/339,
+                        # https://github.com/twisted/incremental/issues/141) we
+                        # don't actually need it
+                        "setuptools",
+                    ],
+                    "dylib_excludes": [str(each) for each in dylibExcludes],
+                }
             },
         }
