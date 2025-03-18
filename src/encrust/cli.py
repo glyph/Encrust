@@ -150,6 +150,12 @@ def loadDescription() -> AppDescription:
 @main.command()
 @reactorized
 async def getsparkle(reactor: Any) -> None:
+    """
+    Download the Sparkle framework used by the current project.
+    """
+    # TODO: should probably use something like Cocoapods to actually fetch
+    # frameworks so that this generalizes a bit.  But I would have to learn how
+    # Cocoapods work for that.
     description = loadDescription()
     if description.sparkleData is None:
         print("Sparkle not specified, not downloading.")
