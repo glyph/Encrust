@@ -137,10 +137,14 @@ async def release(reactor: Any) -> None:
 
 
 def loadDescription() -> AppDescription:
+    """
+    Load the description of the project from C{encrust_setup.py}.
+    """
     sys.path.append(".")
     import encrust_setup  # type:ignore[import-not-found]
 
-    return encrust_setup.description
+    desc = encrust_setup.description
+    return desc
 
 
 @main.command()
