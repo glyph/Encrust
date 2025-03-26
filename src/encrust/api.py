@@ -249,6 +249,12 @@ class AppDescription:
                         # don't actually need it
                         "setuptools",
                     ],
+                    # Workaround for
+                    # https://github.com/ronaldoussoren/py2app/issues/546 -
+                    # this needs validation to see if explicitly *including*
+                    # Tcl.framework and Tk.framework does result in them
+                    # getting signed properly, rather than blowing up in
+                    # py2app's codesign_adhoc.
                     "dylib_excludes": [str(each) for each in dylibExcludes],
                 }
             },
