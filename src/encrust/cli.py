@@ -3,27 +3,17 @@ from functools import wraps
 from getpass import getpass
 from json import load
 from os import environ
-from os.path import expanduser
-from typing import (
-    Any,
-    Callable,
-    Concatenate,
-    Coroutine,
-    Generator,
-    ParamSpec,
-    TypeVar,
-)
+from os.path import abspath, expanduser
+from typing import Any, Callable, Concatenate, Coroutine, Generator, ParamSpec, TypeVar
 
 import click
-
-from ._build import AppBuilder, whichSetup
-from ._spawnutil import c
-from .api import AppDescription
-
 from twisted.internet.defer import Deferred
 from twisted.internet.task import react
 from twisted.python.failure import Failure
 
+from ._build import AppBuilder
+from ._spawnutil import c
+from .api import AppDescription
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -35,7 +25,13 @@ async def configuredBuilder() -> AppBuilder:
     """
     with open(expanduser("~/.encrust.json")) as f:
         obj = load(f)
-    lines = await c.python(whichSetup(), "--name", "--version")
+    lines = await c.python(
+        "-m",
+        "encrust._dosetup",
+        "--name",
+        "--version",
+        workingDirectory=abspath("."),
+    )
     name, version = lines.output.decode("utf-8").strip().split("\n")
     name = environ.get("ENCRUST_APP_NAME", name)
     version = environ.get("ENCRUST_APP_VERSION", version)
@@ -163,6 +159,7 @@ async def getsparkle(reactor: Any) -> None:
 
     await description.sparkleData.sparkleFramework.download()
 
+
 @main.command()
 @reactorized
 async def appcastify(reactor: Any) -> None:
@@ -177,6 +174,7 @@ async def appcastify(reactor: Any) -> None:
         print("Sparkle not specified, not generating appcast.")
         sys.exit(1)
     await description.sparkleData.deploy()
+
 
 @main.command()
 @reactorized

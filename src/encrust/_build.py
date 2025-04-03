@@ -8,23 +8,16 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass
+from os.path import abspath
 from typing import Iterable
 
 from twisted.python.filepath import FilePath
 from twisted.python.modules import getModule
 
 from ._architecture import fixArchitectures, validateArchitectures
-from ._signing import notarize, signablePathsIn, CodeSigner
+from ._signing import CodeSigner, notarize, signablePathsIn
 from ._spawnutil import c
 from ._zip import createZipFile
-
-
-def whichSetup() -> str:
-    cwd = FilePath(".")
-    for possibility in ["py2app_setup.py", "setup.py"]:
-        if cwd.child(possibility).exists():
-            return possibility
-    raise Exception("no setup.py found")
 
 
 @dataclass
@@ -88,7 +81,7 @@ class AppBuilder:
         """
         Just run py2app.
         """
-        await c.python(whichSetup(), "py2app")
+        await c.python("-m", "encrust._dosetup", "py2app", workingDirectory=abspath("."))
 
     async def authenticateForSigning(self, password: str) -> None:
         """
