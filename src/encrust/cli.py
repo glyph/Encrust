@@ -121,6 +121,19 @@ async def build(reactor: Any) -> None:
     await builder.build()
     await builder.signApp()
 
+@main.command()
+@reactorized
+async def devalias(reactor: Any) -> None:
+    """
+    Build an app bundle that uses a symlink into the development copy of the
+    source code, suitable only for local development, but a lot faster than
+    rebuilding all the time.
+
+    @see: U{py2app alias mode
+        <https://py2app.readthedocs.io/en/latest/tutorial.html#development-with-alias-mode>}
+    """
+    builder = await configuredBuilder()
+    await builder.build("--alias")
 
 @main.command()
 @reactorized

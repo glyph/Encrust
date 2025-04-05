@@ -77,11 +77,18 @@ class AppBuilder:
         await createZipFile(archivedAt, self.originalAppPath())
         return archivedAt
 
-    async def build(self) -> None:
+    async def build(self, *options: str) -> None:
         """
-        Just run py2app.
+        Invoke py2app to build a copy of the application, with the given py2app
+        options.
         """
-        await c.python("-m", "encrust._dosetup", "py2app", workingDirectory=abspath("."))
+        await c.python(
+            "-m",
+            "encrust._dosetup",
+            "py2app",
+            *options,
+            workingDirectory=abspath("."),
+        )
 
     async def authenticateForSigning(self, password: str) -> None:
         """
