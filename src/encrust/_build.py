@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass
-from os.path import abspath
+from json import load
+from os.path import abspath, expanduser
 from typing import Iterable
 
 from twisted.python.filepath import FilePath
@@ -21,13 +22,7 @@ from ._zip import createZipFile
 
 
 @dataclass
-class AppBuilder:
-    """
-    A builder for a particular application
-    """
-
-    name: str
-    version: str
+class AppSigner:
     notarizeProfile: str
     appleID: str
     teamID: str
@@ -35,6 +30,32 @@ class AppBuilder:
     entitlementsPath: FilePath[str] = getModule(__name__).filePath.sibling(
         "required-python-entitlements.plist"
     )
+
+
+@dataclass
+class AppBuilder:
+    """
+    A builder for a particular application
+    """
+
+    name: str
+    version: str
+    _signer: AppSigner | None = None
+
+    async def signingConfiguration(self) -> AppSigner:
+        """
+        Load the global signing configuration.
+        """
+        if self._signer is None:
+            with open(expanduser("~/.encrust.json")) as f:
+                obj = load(f)
+            self._signer = AppSigner(
+                identityHash=obj["identity"],
+                notarizeProfile=obj["profile"],
+                appleID=obj["appleID"],
+                teamID=obj["teamID"],
+            )
+        return self._signer
 
     async def release(self) -> None:
         """
@@ -94,14 +115,15 @@ class AppBuilder:
         """
         Prompt the user to authenticate for code-signing and notarization.
         """
+        sign = await self.signingConfiguration()
         await c.xcrun(
             "notarytool",
             "store-credentials",
-            self.notarizeProfile,
+            sign.notarizeProfile,
             "--apple-id",
-            self.appleID,
+            sign.appleID,
             "--team-id",
-            self.teamID,
+            sign.teamID,
             "--password",
             password,
         )
@@ -120,10 +142,11 @@ class AppBuilder:
         Find all binary files which need to be signed within the bundle and run
         C{codesign} to sign them.
         """
+        sign = await self.signingConfiguration()
         signer = CodeSigner(
             self.originalAppPath(),
-            self.identityHash,
-            self.entitlementsPath,
+            sign.identityHash,
+            sign.entitlementsPath,
         )
         await signer.sign()
 
@@ -132,13 +155,14 @@ class AppBuilder:
         Submit the built application to Apple for notarization and wait until we
         have seen a response.
         """
+        sign = await self.signingConfiguration()
         preReleasePath = await self.archiveApp("for-notarizing")
         await notarize(
-            appleID=self.appleID,
-            teamID=self.teamID,
+            appleID=sign.appleID,
+            teamID=sign.teamID,
             archivePath=preReleasePath,
             applicationPath=self.originalAppPath(),
-            notarizeProfile=self.notarizeProfile,
+            notarizeProfile=sign.notarizeProfile,
         )
         await self.archiveApp("release")
         preReleasePath.remove()

@@ -1,9 +1,8 @@
 import sys
 from functools import wraps
 from getpass import getpass
-from json import load
 from os import environ
-from os.path import abspath, expanduser
+from os.path import abspath
 from typing import Any, Callable, Concatenate, Coroutine, Generator, ParamSpec, TypeVar
 
 import click
@@ -23,8 +22,6 @@ async def configuredBuilder() -> AppBuilder:
     """
     Make an AppBuilder out of the local configuration.
     """
-    with open(expanduser("~/.encrust.json")) as f:
-        obj = load(f)
     lines = await c.python(
         "-m",
         "encrust._dosetup",
@@ -35,14 +32,7 @@ async def configuredBuilder() -> AppBuilder:
     name, version = lines.output.decode("utf-8").strip().split("\n")
     name = environ.get("ENCRUST_APP_NAME", name)
     version = environ.get("ENCRUST_APP_VERSION", version)
-    return AppBuilder(
-        name=name,
-        version=version,
-        identityHash=obj["identity"],
-        notarizeProfile=obj["profile"],
-        appleID=obj["appleID"],
-        teamID=obj["teamID"],
-    )
+    return AppBuilder(name=name, version=version)
 
 
 def reactorized(
@@ -121,6 +111,7 @@ async def build(reactor: Any) -> None:
     await builder.build()
     await builder.signApp()
 
+
 @main.command()
 @reactorized
 async def devalias(reactor: Any) -> None:
@@ -134,6 +125,7 @@ async def devalias(reactor: Any) -> None:
     """
     builder = await configuredBuilder()
     await builder.build("--alias")
+
 
 @main.command()
 @reactorized
@@ -197,9 +189,8 @@ async def auth(reactor: Any) -> None:
     https://appleid.apple.com/account/manage
     """
     builder = await configuredBuilder()
-    newpw = getpass(
-        f"Paste App-Specific Password for {builder.appleID} and hit enter: "
-    )
+    sign = await builder.signingConfiguration()
+    newpw = getpass(f"Paste App-Specific Password for {sign.appleID} and hit enter: ")
     await builder.authenticateForSigning(newpw)
     print("Authenticated!")
 
