@@ -105,7 +105,9 @@ class Invocation:
         value = await ipp.d
         if value != 0:
             raise RuntimeError(
-                f"{self.executable} {self.argv} exited with error {value}"
+                f"{self.executable} {self.argv} exited with error {value}\n"
+                f"and output:\n{ipp.output.decode('charmap')}\n"
+                f"and errors:\n{ipp.errors.decode('charmap')}\n"
             )
         return ProcessResult(value, ipp.output, self)
 
