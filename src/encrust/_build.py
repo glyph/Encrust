@@ -109,6 +109,7 @@ class AppBuilder:
             "py2app",
             *options,
             workingDirectory=abspath("."),
+            outputPrefix="py2app",
         )
 
     async def authenticateForSigning(self, password: str) -> None:

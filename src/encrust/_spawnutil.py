@@ -48,7 +48,9 @@ class ProcessResult:
 
 @dataclass
 class InvocationProcessProtocol(ProcessProtocol):
-    def __init__(self, invocation: Invocation, quiet: bool) -> None:
+    def __init__(
+        self, invocation: Invocation, quiet: bool, outputPrefix: str | None = None
+    ) -> None:
         super().__init__()
         self.invocation = invocation
         self.d = Deferred[int]()
@@ -59,7 +61,7 @@ class InvocationProcessProtocol(ProcessProtocol):
     def show(self, data: bytes) -> None:
         if not self.quiet:
             print(
-                f"{self.invocation.executable} {' '.join(self.invocation.argv)}:",
+                f"{self.invocation.computedPrefix}:",
                 data.decode("utf-8", "replace").rstrip("\n"),
             )
 
@@ -84,6 +86,14 @@ class Invocation:
 
     executable: str
     argv: Sequence[str]
+    outputPrefix: str | None = None
+
+    @property
+    def computedPrefix(self) -> str:
+        if self.outputPrefix is not None:
+            return self.outputPrefix
+        else:
+            return f"{self.executable} {' '.join(self.argv)}"
 
     async def __call__(
         self,
@@ -131,11 +141,14 @@ class Command:
         env: Mapping[str, str] = environ,
         quiet: bool = False,
         workingDirectory: str | None = None,
+        outputPrefix: str | None = None,
     ) -> ProcessResult:
         """
         Immedately run.
         """
-        return await self[args](env=env, quiet=quiet, workingDirectory=workingDirectory)
+        return await Invocation(which(self.name)[0], args, outputPrefix=outputPrefix)(
+            env=env, quiet=quiet, workingDirectory=workingDirectory
+        )
 
 
 @dataclass
