@@ -256,6 +256,9 @@ class AppDescription:
                     # getting signed properly, rather than blowing up in
                     # py2app's codesign_adhoc.
                     "dylib_excludes": [str(each) for each in dylibExcludes],
+                    "packages": [
+                        "PIL",
+                    ],
                 }
             },
         }
