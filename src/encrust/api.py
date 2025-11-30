@@ -120,6 +120,15 @@ def _prefix(p: Path, fx: str) -> Path:
     return p.parent / (fx + p.name)
 
 
+from py2app.build_app import py2app
+
+
+class Py2AppIgnoringDependencies(py2app):
+    def finalize_options(self) -> None:
+        self.distribution.install_requires = []
+        return super().finalize_options()
+
+
 @dataclass(kw_only=True)
 class AppDescription:
     """
@@ -228,6 +237,7 @@ class AppDescription:
             **sparklePlist,
         }
         return {
+            "cmdclass": {"py2app": Py2AppIgnoringDependencies},
             "data_files": [str(f) for f in self.dataFiles],
             "options": {
                 "py2app": {
