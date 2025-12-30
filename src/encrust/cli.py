@@ -125,6 +125,7 @@ async def devalias(reactor: Any) -> None:
     """
     builder = await configuredBuilder()
     await builder.build("--alias")
+    await c.rm("-fr", "build")
 
 
 @main.command()
