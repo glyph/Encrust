@@ -10,7 +10,7 @@ from ._spawnutil import c, parallel
 from twisted.internet.defer import Deferred
 from twisted.python.filepath import FilePath
 from twisted.python.procutils import which
-from wheel_filename import ParsedWheelFilename, parse_wheel_filename
+from wheel_filename import WheelFilename
 
 
 class KnownArchitecture(Enum):
@@ -38,7 +38,7 @@ class PlatformSpecifics:
     architecture: KnownArchitecture
 
 
-def specifics(pwf: ParsedWheelFilename) -> Iterable[PlatformSpecifics]:
+def specifics(pwf: WheelFilename) -> Iterable[PlatformSpecifics]:
     """
     Enumerate the specific macOS platforms supported by a given wheel based on
     its filename.
@@ -56,7 +56,7 @@ def specifics(pwf: ParsedWheelFilename) -> Iterable[PlatformSpecifics]:
         yield PlatformSpecifics(os, int(major), int(minor), parsedArch)
 
 
-def wheelNameArchitecture(pwf: ParsedWheelFilename) -> KnownArchitecture:
+def wheelNameArchitecture(pwf: WheelFilename) -> KnownArchitecture:
     """
     Determine the architecture from a wheel.
     """
@@ -133,7 +133,7 @@ def determineNeedsFusing(
     for child in FilePath(downloadDir).children():
         # every wheel in this list should either be architecture-independent,
         # universal2, *or* have *both* arm64 and x86_64 versions.
-        pwf = parse_wheel_filename(child.basename())
+        pwf = WheelFilename.parse(child.basename())
         arch = wheelNameArchitecture(pwf)
         fusedPath = FilePath(fusedDir).child(child.basename())
         if arch == KnownArchitecture.purePython:

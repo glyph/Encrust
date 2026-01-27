@@ -3,7 +3,14 @@ from functools import wraps
 from getpass import getpass
 from os import environ
 from os.path import abspath
-from typing import Any, Callable, Concatenate, Coroutine, Generator, ParamSpec, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Concatenate,
+    ParamSpec,
+    TypeVar,
+    Awaitable,
+)
 
 import click
 from twisted.internet.defer import Deferred
@@ -38,8 +45,7 @@ async def configuredBuilder() -> AppBuilder:
 def reactorized(
     c: Callable[
         Concatenate[Any, P],
-        Coroutine[Deferred[object], Any, object]
-        | Generator[Deferred[object], Any, object],
+        Awaitable[Any],
     ],
 ) -> Callable[P, None]:
     """
@@ -47,9 +53,9 @@ def reactorized(
     """
 
     @wraps(c)
-    def forclick(*a, **kw) -> None:
+    def forclick(*a: P.args, **kw: P.kwargs) -> None:
         def r(reactor: Any) -> Deferred[object]:
-            async def ar():
+            async def ar() -> None:
                 try:
                     await c(reactor, *a, **kw)
                 except Exception:
@@ -145,7 +151,7 @@ def loadDescription() -> AppDescription:
     sys.path.append(".")
     import encrust_setup  # type:ignore[import-not-found]
 
-    desc = encrust_setup.description
+    desc: AppDescription = encrust_setup.description
     return desc
 
 

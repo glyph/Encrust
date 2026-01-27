@@ -163,11 +163,11 @@ class SyntaxSugar:
 
     """
 
-    def __getitem__(self, name) -> Command:
+    def __getitem__(self, name: str) -> Command:
         """ """
         return Command(name)
 
-    def __getattr__(self, name) -> Command:
+    def __getattr__(self, name: str) -> Command:
         """ """
         return Command(name)
 

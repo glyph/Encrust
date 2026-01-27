@@ -126,7 +126,7 @@ from py2app.build_app import py2app
 class Py2AppIgnoringDependencies(py2app):
     def finalize_options(self) -> None:
         self.distribution.install_requires = []
-        return super().finalize_options()
+        super().finalize_options()
 
 
 @dataclass(kw_only=True)
