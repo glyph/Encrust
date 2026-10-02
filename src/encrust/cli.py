@@ -98,17 +98,6 @@ async def sign(reactor: Any) -> None:
 
 @main.command()
 @reactorized
-async def fatten(reactor: Any) -> None:
-    """
-    Ensure that all locally installed shared objects are fat binaries (i.e.
-    universal2 wheels).
-    """
-    builder = await configuredBuilder()
-    await builder.fattenEnvironment()
-
-
-@main.command()
-@reactorized
 async def build(reactor: Any) -> None:
     """
     Build the application.
