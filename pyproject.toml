@@ -16,9 +16,7 @@ version = "2026.01.27"
 dependencies = [
     "twisted",
     "click",
-    "delocate >= 0.12.0",
     "py2app",
-    "wheel_filename",
 ]
 
 [project.optional-dependencies]

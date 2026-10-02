@@ -15,7 +15,6 @@ from typing import Iterable
 from twisted.python.filepath import FilePath
 from twisted.python.modules import getModule
 
-from ._architecture import fixArchitectures, validateArchitectures
 from ._signing import CodeSigner, notarize, signablePathsIn
 from ._spawnutil import c
 from ._zip import createZipFile
@@ -61,30 +60,9 @@ class AppBuilder:
         """
         Execute the release end to end; build, sign, archive, notarize, staple.
         """
-        await self.fattenEnvironment()
         await self.build()
-        archOK = await validateArchitectures([self.originalAppPath()], True)
-        if not archOK:
-            raise RuntimeError()
         await self.signApp()
         await self.notarizeApp()
-
-    async def fattenEnvironment(self) -> None:
-        """
-        Ensure the current virtualenv has all universal2 "fat" binaries.
-        """
-        pathEntries = [FilePath(each) for each in sys.path if each]
-        needsFattening = not await validateArchitectures(pathEntries)
-        if not needsFattening:
-            print("already ok")
-            return
-        await fixArchitectures()
-        stillNeedsFattening = not await validateArchitectures(pathEntries, True)
-        if stillNeedsFattening:
-            raise RuntimeError(
-                "single-architecture binaries still exist after fattening: {stillNeedsFattening}"
-            )
-        print("all relevant binaries now universal2")
 
     def archivePath(self, variant: str) -> FilePath[str]:
         """
