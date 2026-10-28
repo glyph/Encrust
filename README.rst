@@ -20,3 +20,9 @@ there are working examples in the `PINPal
 <https://github.com/glyph/Pomodouroboros/blob/trunk/encrust_setup.py>`_
 projects.  Please feel free to `file an issue
 <https://github.com/glyph/Encrust/issues/new>`_ if you have questions!
+
+AI Policy
+==============================
+
+This repository follows the `Twisted AI Policy
+<https://docs.twisted.org/en/latest/development/ai-policy.html>`_.
