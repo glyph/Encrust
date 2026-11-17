@@ -241,6 +241,7 @@ class AppDescription:
             "data_files": [str(f) for f in self.dataFiles],
             "options": {
                 "py2app": {
+                    "arch": "arm64",
                     "plist": infoPList,
                     "iconfile": str(self.icnsFile),
                     "app": [str(self.mainPythonScript)],
